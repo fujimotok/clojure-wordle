@@ -1,0 +1,23 @@
+div.wordbox
+{
+    display: inline-block;
+    color: #202020;
+    background-color: #909090;
+    text-align: center;
+    line-height: 30px;
+    width: 30px;
+    height: 30px;
+    margin: 1px;
+}
+
+div.wordbox.nearly
+{
+    color: #202020;
+    background-color: #20F090;
+}
+
+div.wordbox.just
+{
+    color: #F0F0F0;
+    background-color: #2090F0;
+}
