@@ -3,6 +3,8 @@
             [ring.util.response :as res] ;; handlerで定型のレスポンス返すときに使用
             [ring.middleware.keyword-params :as keyword-params] ;; パラメータ受け取りやすくするミドルウェア
             [ring.middleware.params :as params] ;; パラメータ受け取りやすくするミドルウェア
+            [ring.middleware.flash :as flash] ;; Railsのflashのような機能を実現のためのミドルウェア
+            [ring.middleware.session :as session] ;; Railsのflashのような機能を実現のためのミドルウェア
             [ring.middleware.resource :as resource] ;; リソースを参照するためのミドルウェア
             [compojure.core :refer [routes defroutes GET POST]] ;; ルーター
             [compojure.route :as route] ;; デフォルトルートの定義
@@ -27,6 +29,8 @@
      [:post "/"]
      [:input {:name :guess :maxlength 5 :minlength 5 :required true :placeholder "input 5 charactor"}]
      [:button "send"])
+    (when-let [{:keys [msg]} (:flash req)] ;; リクエストマップに :flash があればそれをアラートとして表示される
+      [:div.alart [:strong msg]])
     [:div
      (for [h @history]
        [:div 
@@ -45,12 +49,16 @@
 ;; root web page end.
 
 ;; judge web page.
-(defn judge-method [{:as req :keys [params]}]
-  (swap! history conj (wordle/score (:guess params) @secret)))
+(defn judge-method [res req]
+  (if (wordle/word-valid? (:guess (:params req)) w/words)
+    (do
+      (swap! history conj (wordle/score (:guess (:params req)) @secret))
+      res)
+    (assoc res :flash {:msg "Invalid word"})))
 
 (defn judge [req]
-  (judge-method req)
-  (-> (res/redirect "/")
+    (-> (res/redirect "/")
+      (judge-method req)
       (res/content-type "text/html; charset=utf-8")))
 ;; judge web page end.
 
@@ -66,6 +74,8 @@
       (resource/wrap-resource "public")
       (keyword-params/wrap-keyword-params)
       (params/wrap-params)
+      (flash/wrap-flash)
+      (session/wrap-session)
       ))
 ;; router & middleware end.
 

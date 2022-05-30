@@ -21,3 +21,10 @@ div.wordbox.just
     color: #F0F0F0;
     background-color: #2090F0;
 }
+
+div.alart
+{
+    display: inline-block;
+    color: #202020;
+    background-color: #F02020;
+}
