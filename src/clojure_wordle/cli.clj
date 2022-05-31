@@ -35,35 +35,50 @@
   (dorun
    (map #(cond 
            (:just %) (print (format "%s%s%s" (:red console-fg-color) (:char %) (:reset console-fg-color)))
-           (:nearly %) (print (format "%s%s%s" (:blue console-fg-color) (:char %) (:reset console-fg-color)))
-           (:used %) (print (format "%s%s%s" (:cyan console-fg-color) (:char %) (:reset console-fg-color)))
+           (:nearly %) (print (format "%s%s%s" (:yellow console-fg-color) (:char %) (:reset console-fg-color)))
+           (:used %) (print (format "%s%s%s" (:blue console-fg-color) (:char %) (:reset console-fg-color)))
            :else (print (format "%s" (:char %))))
         coll)))
 
+(defonce history (atom '[]))
+(defonce valid-keys (atom '[]))
+(defonce secret (atom nil))
+
+(defn print-keyboard []
+  (print-with-color
+    (for [c '[\q \w \e \r \t \y \u \i \o \p]]
+     (filter #(= (:char %) c) @valid-keys)))
+  (println)
+  (print-with-color
+   (for [c '[\a \s \d \f \g \h \j \k \l]]
+     (filter #(= (:char %) c) @valid-keys)))
+  (println)
+  (print-with-color
+   (for [c '[\z \x \c \v \b \n \m]]
+     (filter #(= (:char %) c) @valid-keys)))
+  (println))
+
+(defn judge
+  "Jugde line input."
+  [line]
+  (cond
+    (< (count line) 5) (println "Inputs must 5 charactor. Please retry.")
+    (not (wordle/word-valid? (str/join (take 5 line)) w/words)) (println "Invalid word. Please retry.")
+    :else
+    (do
+      (swap! history conj (wordle/score (str/join (take 5 line)) @secret))
+      (reset! valid-keys (wordle/available-keys @history))
+      (print-with-color @valid-keys)
+      (print-with-color (last @history))
+      (println))))
+
 (defn game-cli []
-  (println "Welcome clojure-wordle. Please input 5 charactor. just=red nearly=blue")
-  (let [secret (rand-nth w/words)
-        history (atom '[])
-        keys (atom '[])
-        i (atom 0)]
-    (while (< @i 6)
-      (print (format "try[%d] > " @i))
+  (reset! history '[])
+  (reset! valid-keys '[])
+  (reset! secret (rand-nth w/words))
+  (println "Welcome clojure-wordle. Please input 5 charactor. just=red nearly=yellow used=blue")
+    (while (< (count @history) 6)
+      (print (format "try[%d] > " (count @history)))
       (flush)
-      (let [line (read-line)]
-        (cond
-          (< (count line) 5) (println "Inputs must 5 charactor. Please retry.")
-          (not (wordle/word-valid? (str/join (take 5 line)) w/words)) (println "Invalid word. Please retry.")
-          :else
-          (do
-            (swap! history conj (wordle/score (str/split (str/join (take 5 line)) #"") (str/split secret #"")))
-            (reset! keys (wordle/available-keys @history))
-            (print-with-color @keys)
-            (println)
-            (print-with-color (last @history))
-            (println)
-            (if (= (str/join (take 5 line)) secret)
-                (swap! i 6)
-                (swap! i inc))
-            ))))
-    (println secret)
-    ))
+      (judge (read-line)))
+    (println "The answer is" @secret))

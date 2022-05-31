@@ -4,8 +4,11 @@ My clojure training project, which Wordle in clojure.
 ## Installation
 
 ## Usage
-
+launch cli app.  
 `lein run`
+
+launch web app.  
+`lein run web`
 
 ## Options
 

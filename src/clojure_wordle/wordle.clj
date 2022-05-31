@@ -29,12 +29,11 @@
   return: map list ({:char char, :just bool, :nealry bool} ..)
   "
   [history]
-  (let [hist (set (flatten history))
+  (let [hist (group-by :char (flatten history))
         keys (map char (range (int \a) (inc (int \z))))]
-    (println hist)
     (map #(cond
-            (and (find hist :char)) (array-map :char % :just true :nearly false :used false)
+            (some :just (hist %)) (array-map :char % :just true :nearly false :used false)
             (some :nearly (hist %)) (array-map :char % :just false :nearly true :used false)
-            (some :char (hist %)) (array-map :char % :just true :nearly false :used true)
+            (some :char (hist %)) (array-map :char % :just false :nearly false :used true)
             :else  (array-map :char % :just false :nearly false :used false))
          keys)))
