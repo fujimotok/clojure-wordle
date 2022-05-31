@@ -69,6 +69,7 @@
       (swap! history conj (wordle/score (str/join (take 5 line)) @secret))
       (reset! valid-keys (wordle/available-keys @history))
       (print-with-color @valid-keys)
+      (println)
       (print-with-color (last @history))
       (println))))
 
