@@ -4,6 +4,7 @@
             [clojure.string :as str]
             [clojure-wordle.words :as w]))
 
+;; CLI print functions
 (def console-fg-color
   {
    :black   "\u001b[30m"
@@ -31,32 +32,51 @@
  })
 
 (defn print-with-color
-  [coll]
-  (dorun
-   (map #(cond 
-           (:just %) (print (format "%s%s%s" (:red console-fg-color) (:char %) (:reset console-fg-color)))
-           (:nearly %) (print (format "%s%s%s" (:yellow console-fg-color) (:char %) (:reset console-fg-color)))
-           (:used %) (print (format "%s%s%s" (:blue console-fg-color) (:char %) (:reset console-fg-color)))
-           :else (print (format "%s" (:char %))))
-        coll)))
+  "Print char enclose color controll char."
+  [c]
+   (cond 
+     (:just c) (print (format "%s%s%s" (:red console-fg-color) (:char c) (:reset console-fg-color)))
+     (:nearly c) (print (format "%s%s%s" (:yellow console-fg-color) (:char c) (:reset console-fg-color)))
+     (:used c) (print (format "%s%s%s" (:blue console-fg-color) (:char c) (:reset console-fg-color)))
+     :else (print (format "%s" (:char c)))))
+        
+(defn print-keyboard
+  "Print valid keys which formated by keyboard order."
+  [valid-keys]
+  (let [print-seq
+        (fn [seq]
+          (dorun (for [c seq]
+                   (print-with-color
+                    (first (filter #(= (:char %) c) valid-keys))))))]
+    (print-seq '[\q \w \e \r \t \y \u \i \o \p])
+    (println)
+    (print " ")
+    (print-seq '[\a \s \d \f \g \h \j \k \l])
+    (println)
+    (print "  ")
+    (print-seq '[\z \x \c \v \b \n \m])
+    (println)
+    ))
 
+(defn print-history
+  "Print history which colord by judgement"
+  [history]
+  (let [print-seq
+        (fn [seq]
+          (dorun (for [c seq]
+                   (print-with-color c))))]
+    (dorun
+     (map #(do (print-seq %)
+               (println))
+          history))
+    ))
+;; End CLI print functions
+
+;; Game states and flow controlls.
 (defonce history (atom '[]))
 (defonce valid-keys (atom '[]))
 (defonce secret (atom nil))
-
-(defn print-keyboard []
-  (print-with-color
-    (for [c '[\q \w \e \r \t \y \u \i \o \p]]
-     (filter #(= (:char %) c) @valid-keys)))
-  (println)
-  (print-with-color
-   (for [c '[\a \s \d \f \g \h \j \k \l]]
-     (filter #(= (:char %) c) @valid-keys)))
-  (println)
-  (print-with-color
-   (for [c '[\z \x \c \v \b \n \m]]
-     (filter #(= (:char %) c) @valid-keys)))
-  (println))
+(defonce win (atom false))
 
 (defn judge
   "Jugde line input."
@@ -68,18 +88,36 @@
     (do
       (swap! history conj (wordle/score (str/join (take 5 line)) @secret))
       (reset! valid-keys (wordle/available-keys @history))
-      (print-with-color @valid-keys)
+      (print-keyboard @valid-keys)
       (println)
-      (print-with-color (last @history))
-      (println))))
+      (print-history @history)
+      (if (= line @secret)
+        (do
+          (reset! win true)
+          (println "You Win !!")))
+      )))
 
-(defn game-cli []
+(defn game-continue?
+  "Judgment whether to continue the game."
+  []
+  (and (< (count @history) 6) (not @win)))
+
+(defn game-cli
+  "Game entry point."
+  []
   (reset! history '[])
   (reset! valid-keys '[])
   (reset! secret (rand-nth w/words))
-  (println "Welcome clojure-wordle. Please input 5 charactor. just=red nearly=yellow used=blue")
-    (while (< (count @history) 6)
-      (print (format "try[%d] > " (count @history)))
-      (flush)
-      (judge (read-line)))
-    (println "The answer is" @secret))
+
+  (println "Welcome clojure-wordle.")
+  (println "Please input 5 charactor.")
+  (println "Just=Red Nearly=Yellow Used=Blue")
+
+  (while (game-continue?)
+    (print (format "try[%d] > " (inc (count @history))))
+    (flush)
+    (judge (read-line)))
+
+  (if (not @win) (println "You Lose !!"))
+  (println "The answer is" @secret))
+;; End Game states and flow controlls.
