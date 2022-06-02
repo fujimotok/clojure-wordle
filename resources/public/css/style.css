@@ -10,6 +10,12 @@ div.wordbox
     margin: 1px;
 }
 
+div.wordbox.used
+{
+    color: #F0F0F0;
+    background-color: #404040;
+}
+
 div.wordbox.nearly
 {
     color: #202020;
@@ -27,4 +33,11 @@ div.alart
     display: inline-block;
     color: #202020;
     background-color: #F02020;
+}
+
+div.spacer
+{
+    display: inline-block;
+    width: 15px;
+    height: 30px;
 }

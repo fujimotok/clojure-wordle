@@ -18,6 +18,7 @@
 (defonce valid-keys (atom '[]))
 (defonce secret (atom nil))
 (defonce win (atom false))
+(defonce keyboard '[[\q \w \e \r \t \y \u \i \o \p] [\space \a \s \d \f \g \h \j \k \l] [\space \space \z \x \c \v \b \n \m]])
 
 (defn game-continue?
   []
@@ -30,17 +31,22 @@
     [:title "Clojure-Wordle"]
     (include-css "/css/style.css")]
    [:body
-    [:header "Clojure-Wordle"]    
+    [:header "Clojure-Wordle"]
+    ;; form erea
     (hf/form-to
      [:post "/"]
      [:input {:name :guess :maxlength 5 :minlength 5 :required true :placeholder "input 5 charactor"}]
      [:button (if (not (game-continue?) ) '{:disabled true}) "send"])
+
+    ;; message erea
     (when-let [{:keys [msg]} (:flash req)] ;; リクエストマップに :flash があればそれをアラートとして表示される
       [:div.alart [:strong msg]])
     (when @win
       [:div [:strong "You Win !!"]])
     (when (and (not @win) (<= 6 (count @history)))
-      [:div [:strong "You Lose !!"]])
+      [:div [:strong "You Lose !! The answer is " @secret]])
+
+    ;; history
     [:div
      (for [h @history]
        [:div 
@@ -49,6 +55,19 @@
             (:nearly m) [:div.wordbox.nearly (:char m)]
             (:just m) [:div.wordbox.just (:char m)]
             :else [:div.wordbox (:char m)]))
+        ])]
+    ;; keyboard
+    [:div {:style "margin-top:20px;"}
+     (for [l keyboard]
+       [:div
+        (for [m (for [c l]
+                  (first (filter #(= (:char %) c) @valid-keys)))]
+          (cond
+            (:used m) [:div.wordbox.used (:char m)]
+            (:nearly m) [:div.wordbox.nearly (:char m)]
+            (:just m) [:div.wordbox.just (:char m)]
+            (:char m) [:div.wordbox (:char m)]
+            :else [:div.spacer (:char m)]))
         ])]
     ]))
 
@@ -102,7 +121,7 @@
   (when-not @server
     (reset! server (server/run-jetty #'app {:port 3000 :join? false})))
   (reset! history '[])
-  (reset! valid-keys '[])
+  (reset! valid-keys (doall (wordle/available-keys @history)))
   (reset! win false)
   (reset! secret (rand-nth w/words)))
 
